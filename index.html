@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FoodBridge – Share surplus food with people who need it</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#14231c;--muted:#5d6f66;--green:#1b6b4a;--green-d:#0f4a32;--saffron:#f2a93b;--bg:#f4f7f4;--card:#fff;--line:#dde6df;--red:#c43d3d}
+*{box-sizing:border-box;margin:0}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
+h1,h2,h3,.logo{font-family:'Bricolage Grotesque',system-ui,sans-serif}
+button,input,select,textarea{font:inherit}
+:focus-visible{outline:3px solid var(--saffron);outline-offset:2px}
+nav{position:sticky;top:0;z-index:10;background:var(--green-d);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:.8rem 5vw}
+.logo{font-size:1.35rem;font-weight:800;cursor:pointer}.logo span{color:var(--saffron)}
+nav div{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+.btn{border:0;border-radius:8px;padding:.6rem 1.1rem;font-weight:600;cursor:pointer;background:var(--green);color:#fff;transition:transform .15s,background .15s}
+.btn:hover{background:var(--green-d);transform:translateY(-1px)}
+.btn.alt{background:var(--saffron);color:var(--ink)}.btn.ghost{background:transparent;color:inherit;border:1.5px solid currentColor}
+.btn.danger{background:var(--red)}.btn.sm{padding:.4rem .8rem;font-size:.9rem}
+.hero{background:var(--green-d);color:#fff;padding:4.5rem 5vw 5rem;display:grid;grid-template-columns:1.2fr 1fr;gap:3rem;align-items:center}
+.hero h1{font-size:clamp(2.2rem,5vw,3.8rem);line-height:1.05;font-weight:800;margin-bottom:1rem}
+.hero p{max-width:46ch;opacity:.9;margin-bottom:1.6rem}
+.counter{background:#fff;color:var(--ink);border-radius:18px;padding:1.8rem;text-align:center;border-bottom:8px solid var(--saffron)}
+.counter big{display:block;font-family:'Bricolage Grotesque';font-size:4rem;font-weight:800;color:var(--green);line-height:1}
+.counter .row{display:flex;justify-content:space-around;margin-top:1.2rem;padding-top:1.2rem;border-top:1px solid var(--line)}
+.counter .row b{display:block;font-size:1.4rem}.counter small{color:var(--muted)}
+main{padding:2.5rem 5vw 4rem;max-width:1200px;margin:auto}
+.filters{display:flex;gap:.7rem;flex-wrap:wrap;margin:1rem 0 1.5rem}
+input,select,textarea{padding:.65rem .8rem;border:1.5px solid var(--line);border-radius:8px;background:#fff;width:100%}
+.filters input,.filters select{width:auto;flex:1;min-width:150px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:1.2rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:1.2rem;display:flex;flex-direction:column;gap:.5rem}
+.card h3{font-size:1.15rem}.card .meta{color:var(--muted);font-size:.92rem}
+.tag{display:inline-block;padding:.15rem .6rem;border-radius:99px;font-size:.8rem;font-weight:600;background:#e3f2e9;color:var(--green-d);width:fit-content}
+.tag.claimed{background:#fff1d6;color:#8a5a00}.tag.delivered{background:#dfe9ff;color:#24408c}.tag.expired{background:#fde4e4;color:var(--red)}
+.card .actions{margin-top:auto;padding-top:.6rem;display:flex;gap:.5rem;flex-wrap:wrap}
+.panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:1.4rem;margin:1.2rem 0}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}.form .full{grid-column:1/-1}
+label{font-size:.9rem;font-weight:600;display:block;margin-bottom:.2rem}
+.empty{padding:2.5rem;text-align:center;color:var(--muted);border:2px dashed var(--line);border-radius:12px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1rem}
+.steps div{padding:1.2rem;background:#fff;border-radius:12px;border-left:5px solid var(--saffron)}
+dialog{border:0;border-radius:14px;padding:1.6rem;width:min(420px,92vw);margin:auto}
+dialog::backdrop{background:#0008}
+dialog form{display:grid;gap:.7rem}
+.tabs{display:flex;gap:.5rem;margin-bottom:.6rem}.tabs .btn{flex:1;background:#e8eee9;color:var(--ink)}.tabs .btn.on{background:var(--green);color:#fff}
+#toast{position:fixed;bottom:1.2rem;left:50%;transform:translate(-50%,120px);background:var(--ink);color:#fff;padding:.8rem 1.3rem;border-radius:10px;transition:transform .3s;z-index:99}
+#toast.show{transform:translate(-50%,0)}#toast.err{background:var(--red)}
+footer{text-align:center;padding:2rem;color:var(--muted);font-size:.9rem}
+.hide{display:none!important}
+@media(max-width:800px){.hero,.steps,.form{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo" onclick="show('home')">Food<span>Bridge</span></div>
+  <div id="navbar"></div>
+</nav>
+
+<section id="home">
+  <header class="hero">
+    <div>
+      <h1>Surplus food should reach a plate, not a bin.</h1>
+      <p>Restaurants, hostels, weddings and homes list extra food. NGOs and families nearby claim it before it expires. Free, local and quick.</p>
+      <button class="btn alt" onclick="openAuth('register')">Join FoodBridge</button>
+      <button class="btn ghost" onclick="document.getElementById('browse').scrollIntoView({behavior:'smooth'})">See available food</button>
+    </div>
+    <div class="counter">
+      <small>Servings delivered so far</small>
+      <big id="s-meals">0</big>
+      <div class="row">
+        <div><b id="s-donors">0</b><small>Donors</small></div>
+        <div><b id="s-recv">0</b><small>NGOs and families</small></div>
+        <div><b id="s-don">0</b><small>Listings</small></div>
+      </div>
+    </div>
+  </header>
+  <main>
+    <h2>How it works</h2>
+    <div class="steps">
+      <div><h3>Donors list food</h3><p class="meta">Add what you have, how much, and the pickup deadline.</p></div>
+      <div><h3>NGOs and families claim</h3><p class="meta">The first to claim gets the donor's pickup details.</p></div>
+      <div><h3>Donor confirms delivery</h3><p class="meta">The donation moves to the delivered count above.</p></div>
+    </div>
+    <h2 id="browse" style="margin-top:2.5rem">Food available now</h2>
+    <div class="filters">
+      <input id="f-q" placeholder="Search food, e.g. rice, bread" aria-label="Search">
+      <input id="f-city" placeholder="City" aria-label="City">
+      <select id="f-cat" aria-label="Category">
+        <option value="">All types</option><option value="cooked">Cooked meals</option><option value="bakery">Bakery</option>
+        <option value="produce">Fruits and vegetables</option><option value="packaged">Packaged food</option>
+      </select>
+    </div>
+    <div id="list" class="grid"></div>
+  </main>
+</section>
+
+<section id="dash" class="hide"><main id="dash-body"></main></section>
+
+<dialog id="auth">
+  <div class="tabs"><button class="btn on" id="t-login" onclick="authTab('login')">Log in</button><button class="btn" id="t-reg" onclick="authTab('register')">Sign up</button></div>
+  <form id="auth-form">
+    <div id="reg-fields" class="hide" style="display:grid;gap:.7rem">
+      <input name="name" placeholder="Full name or organisation">
+      <select name="role"><option value="donor">I am a donor (restaurant, home, event)</option><option value="ngo">I represent an NGO</option><option value="needy">I need food for myself or family</option></select>
+      <input name="city" placeholder="City">
+      <input name="phone" placeholder="Phone number">
+    </div>
+    <input name="email" type="email" placeholder="Email" required>
+    <input name="password" type="password" placeholder="Password (min 6 characters)" required>
+    <button class="btn" id="auth-submit">Log in</button>
+    <button type="button" class="btn ghost" style="color:var(--muted)" onclick="auth.close()">Cancel</button>
+  </form>
+</dialog>
+<div id="toast" role="status"></div>
+<footer>FoodBridge · Reduce food waste, feed people.</footer>
+
+<script>
+const $ = s => document.querySelector(s);
+let token = localStorage.getItem('fb_t'), user = JSON.parse(localStorage.getItem('fb_u') || 'null'), mode = 'login';
+const ICON = { cooked: '🍛', bakery: '🥖', produce: '🥦', packaged: '📦' };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = d => new Date(d).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+
+function toast(msg, err) { const t = $('#toast'); t.textContent = msg; t.className = 'show' + (err ? ' err' : ''); clearTimeout(t.h); t.h = setTimeout(() => t.className = '', 3000); }
+
+async function api(path, method = 'GET', body) {
+  const r = await fetch('/api' + path, { method, headers: { 'Content-Type': 'application/json', ...(token && { Authorization: 'Bearer ' + token }) }, body: body && JSON.stringify(body) });
+  const d = await r.json();
+  if (!r.ok) { if (r.status === 401 && token) logout(true); throw new Error(d.error || 'Something went wrong'); }
+  return d;
+}
+
+function show(v) { $('#home').classList.toggle('hide', v !== 'home'); $('#dash').classList.toggle('hide', v !== 'dash'); window.scrollTo(0, 0); if (v === 'dash') loadDash(); else { loadStats(); loadList(); } }
+
+function nav() {
+  $('#navbar').innerHTML = user
+    ? `<span>Hi, ${esc(user.name.split(' ')[0])}</span><button class="btn alt sm" onclick="show('dash')">My dashboard</button><button class="btn ghost sm" onclick="logout()">Log out</button>`
+    : `<button class="btn ghost sm" onclick="openAuth('login')">Log in</button><button class="btn alt sm" onclick="openAuth('register')">Sign up</button>`;
+}
+
+// ---- Auth ----
+function openAuth(m) { authTab(m); $('#auth').showModal(); }
+function authTab(m) {
+  mode = m; $('#reg-fields').classList.toggle('hide', m !== 'register'); $('#reg-fields').style.display = m === 'register' ? 'grid' : 'none';
+  $('#t-login').classList.toggle('on', m === 'login'); $('#t-reg').classList.toggle('on', m === 'register');
+  $('#auth-submit').textContent = m === 'login' ? 'Log in' : 'Create account';
+}
+$('#auth-form').onsubmit = async e => {
+  e.preventDefault();
+  try {
+    const d = await api('/' + mode, 'POST', Object.fromEntries(new FormData(e.target)));
+    token = d.token; user = d.user; localStorage.setItem('fb_t', token); localStorage.setItem('fb_u', JSON.stringify(user));
+    $('#auth').close(); e.target.reset(); nav(); toast('Welcome, ' + user.name + '!'); show('dash');
+  } catch (er) { toast(er.message, true); }
+};
+function logout(expired) { token = user = null; localStorage.removeItem('fb_t'); localStorage.removeItem('fb_u'); nav(); show('home'); toast(expired ? 'Session expired. Log in again.' : 'Logged out.'); }
+
+// ---- Cards ----
+function card(d, ctx) {
+  const mine = user && (d.donorId === user.id);
+  let act = '';
+  if (ctx === 'public' && (!user)) act = `<button class="btn sm" onclick="openAuth('login')">Log in to claim</button>`;
+  else if (ctx === 'public' && user.role !== 'donor') act = `<button class="btn sm" onclick="claim('${d.id}')">Claim this food</button>`;
+  if (ctx === 'dash' && user.role === 'donor') {
+    if (d.status === 'available') act = `<button class="btn danger sm" onclick="del('${d.id}')">Delete</button>`;
+    if (d.status === 'claimed') act = `<button class="btn sm" onclick="deliver('${d.id}')">Mark delivered</button>`;
+  }
+  const contact = ctx === 'dash' && d.status !== 'available'
+    ? (user.role === 'donor' ? `<div class="meta">Claimed by <b>${esc(d.claimedByName)}</b> ${esc(d.claimedPhone || '')}</div>` : `<div class="meta">Call donor: <b>${esc(d.donorPhone || 'not provided')}</b></div>`) : '';
+  return `<article class="card"><span class="tag ${d.status}">${d.status}</span>
+    <h3>${ICON[d.category] || '🍽️'} ${esc(d.title)}</h3>
+    <div class="meta">${d.quantity} servings · ${esc(d.donorName)}</div>
+    <div class="meta">📍 ${esc(d.address)}, ${esc(d.city)}</div>
+    <div class="meta">⏰ Pick up before ${fmt(d.expiresAt)}</div>
+    ${d.description ? `<p>${esc(d.description)}</p>` : ''}${contact}
+    <div class="actions">${act}</div></article>`;
+}
+
+// ---- Public listing ----
+async function loadStats() {
+  const s = await api('/stats');
+  $('#s-meals').textContent = s.meals; $('#s-donors').textContent = s.donors; $('#s-recv').textContent = s.receivers; $('#s-don').textContent = s.donations;
+}
+async function loadList() {
+  const p = new URLSearchParams({ q: $('#f-q').value, city: $('#f-city').value, category: $('#f-cat').value });
+  const list = await api('/donations?' + p);
+  $('#list').innerHTML = list.length ? list.map(d => card(d, 'public')).join('') : `<div class="empty" style="grid-column:1/-1">No food listed here right now. Try another city, or check back soon.</div>`;
+}
+let timer; ['#f-q', '#f-city'].forEach(s => $(s).oninput = () => { clearTimeout(timer); timer = setTimeout(loadList, 300); }); $('#f-cat').onchange = loadList;
+
+async function claim(id) { try { await api(`/donations/${id}/claim`, 'POST'); toast('Claimed. Check your dashboard for pickup details.'); loadList(); } catch (e) { toast(e.message, true); } }
+async function deliver(id) { try { await api(`/donations/${id}/deliver`, 'POST'); toast('Marked as delivered.'); loadDash(); } catch (e) { toast(e.message, true); } }
+async function del(id) { if (!confirm('Delete this donation?')) return; try { await api('/donations/' + id, 'DELETE'); toast('Donation deleted.'); loadDash(); } catch (e) { toast(e.message, true); } }
+
+// ---- Dashboard ----
+async function loadDash() {
+  if (!user) return openAuth('login');
+  const mine = await api('/my');
+  const isDonor = user.role === 'donor';
+  $('#dash-body').innerHTML = `<h2>${isDonor ? 'Your donations' : 'Food you claimed'}</h2>
+  <p class="meta">${esc(user.name)} · ${esc(user.city)} · ${{ donor: 'Donor', ngo: 'NGO', needy: 'Receiver' }[user.role]}</p>
+  ${isDonor ? `<div class="panel"><h3>Add surplus food</h3><form class="form" id="don-form" style="margin-top:.8rem">
+    <div class="full"><label>What food is it?</label><input name="title" placeholder="e.g. Veg biryani and raita" required></div>
+    <div><label>Type</label><select name="category"><option value="cooked">Cooked meals</option><option value="bakery">Bakery</option><option value="produce">Fruits and vegetables</option><option value="packaged">Packaged food</option></select></div>
+    <div><label>Servings</label><input name="quantity" type="number" min="1" required></div>
+    <div><label>Pickup address</label><input name="address" required></div>
+    <div><label>City</label><input name="city" value="${esc(user.city)}" required></div>
+    <div class="full"><label>Pick up before</label><input name="expiresAt" type="datetime-local" required></div>
+    <div class="full"><label>Notes (optional)</label><textarea name="description" rows="2" placeholder="Veg only, packed in boxes"></textarea></div>
+    <div class="full"><button class="btn">Publish donation</button></div></form></div>` : ''}
+  <div class="grid" style="margin-top:1.2rem">${mine.length ? mine.map(d => card(d, 'dash')).join('') :
+    `<div class="empty" style="grid-column:1/-1">${isDonor ? 'You have not listed any food yet. Use the form above.' : 'You have not claimed anything yet. Browse available food on the home page.'}</div>`}</div>`;
+  const f = $('#don-form');
+  if (f) f.onsubmit = async e => {
+    e.preventDefault();
+    try { await api('/donations', 'POST', Object.fromEntries(new FormData(f))); toast('Donation published.'); loadDash(); } catch (er) { toast(er.message, true); }
+  };
+}
+
+nav(); loadStats(); loadList();
+</script>
+</body>
+</html>
